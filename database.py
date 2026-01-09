@@ -1,21 +1,18 @@
 import sqlite3
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "rent_manager.db"
-SCHEMA_PATH = BASE_DIR / "sql" / "schema.sql"
+DB_PATH = Path("rent.db")
+SCHEMA_PATH = Path("schema.sql")
 
 
 def get_connection():
+    first_run = not DB_PATH.exists()
+
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON;")
+
+    if first_run:
+        with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
+            conn.executescript(f.read())
+        conn.commit()
+
     return conn
-
-
-def init_db():
-    conn = get_connection()
-    with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
-        conn.executescript(f.read())
-    conn.commit()
-    conn.close()
