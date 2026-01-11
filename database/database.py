@@ -2,7 +2,7 @@ import sqlite3
 from pathlib import Path
 
 DB_PATH = Path("data/app.db")
-SCHEMA_PATH = Path("sql/schema.sql")
+SCHEMA_PATH = Path("data/schema.sql")
 
 
 def get_connection():
