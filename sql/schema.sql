@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS assignments (
     start_date TEXT NOT NULL,
     end_date TEXT,
     rent_amount REAL NOT NULL,
-    ras_ir
+    ras_ir INTEGER DEFAULT 0 CHECK (ras_ir IN (0,1)),
     FOREIGN KEY (unit_id) REFERENCES units(id),
     FOREIGN KEY (client_id) REFERENCES clients(id)
 );
