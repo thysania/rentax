@@ -30,6 +30,18 @@ def taxes_menu():
             res = compute_owner_taxes_for_year(oid, year)
             _print_tax_result(res)
 
+    # Offer CSV export
+    exp = input("Export CSV report? (y/N): ").strip().lower()
+    if exp == 'y':
+        fmt = input("Format - 'detailed' (one owner line), 'by-assignment' (lines per assignment then owner summary), 'minimal' : ").strip() or 'detailed'
+        out = input("Output file (path) or '-' for stdout [taxes_{}.csv]: ".format(year)).strip() or f"taxes_{year}.csv"
+        headers, rows = __import__('services.taxes_service', fromlist=['generate_taxes_report']).generate_taxes_report(year, csv_format=fmt, owner_id=(int(owner) if owner else None))
+        out_content = __import__('services.taxes_service', fromlist=['write_csv_file']).write_csv_file(out, headers, rows)
+        if out == '-':
+            print(out_content)
+        else:
+            print(f"Wrote CSV to {out}")
+
 
 def _print_tax_result(res):
     print(f"\nOwner {res['owner_id']} - Year {res['year']}")
