@@ -6,6 +6,7 @@ def receipts_menu():
         print("\n=== Receipts ===")
         print("1. Create receipt (split and log)")
         print("2. Show receipt logs")
+        print("3. Record payment for receipt log UID")
         print("0. Back")
 
         choice = input("Choose an option: ").strip()
@@ -14,6 +15,8 @@ def receipts_menu():
             add_receipt()
         elif choice == "2":
             show_receipt_logs()
+        elif choice == "3":
+            record_payment()
         elif choice == "0":
             break
         else:
@@ -60,3 +63,29 @@ def show_receipt_logs():
         )
 
     input("\nPress Enter to continue...")
+
+
+def record_payment():
+    from services.payments_service import create_payment
+
+    uid = input("Receipt log UID: ").strip()
+    amount = input("Amount received: ").strip()
+    received_at = input("Received date (YYYY-MM-DD) [today]: ").strip()
+    note = input("Note (optional): ").strip()
+
+    if not uid.isdigit():
+        print("UID must be numeric.")
+        return
+    try:
+        amount_val = float(amount)
+    except Exception:
+        print("Invalid amount.")
+        return
+
+    received_at_val = received_at if received_at else None
+
+    try:
+        create_payment(int(uid), amount_val, received_at_val, note if note else None)
+        print("Payment recorded.")
+    except Exception as e:
+        print(f"Error recording payment: {e}")
