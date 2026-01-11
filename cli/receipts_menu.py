@@ -1,4 +1,5 @@
 from services.receipt_service import list_receipt_logs_with_names, create_receipt
+from services.taxes_service import write_csv_file
 
 
 def receipts_menu():
@@ -7,6 +8,7 @@ def receipts_menu():
         print("1. Create receipt (split and log)")
         print("2. Show receipt logs")
         print("3. Record payment for receipt log UID")
+        print("4. Export receipts/payments CSV")
         print("0. Back")
 
         choice = input("Choose an option: ").strip()
@@ -17,6 +19,8 @@ def receipts_menu():
             show_receipt_logs()
         elif choice == "3":
             record_payment()
+        elif choice == "4":
+            export_receipts_csv()
         elif choice == "0":
             break
         else:
@@ -111,3 +115,28 @@ def record_payment():
         print("Payment recorded.")
     except Exception as e:
         print(f"Error recording payment: {e}")
+
+
+def export_receipts_csv():
+    year = input("Year (YYYY): ").strip()
+    owner = input("Owner ID (blank = all owners): ").strip()
+    if not year.isdigit():
+        print("Invalid year format.")
+        return
+    year = int(year)
+    fmt = input("Format - 'detailed' (lines per receipt), 'by-owner' (owner aggregation), 'minimal' : ").strip() or 'detailed'
+    out = input("Output file (path) or '-' for stdout [receipts_{year}.csv]: ").strip() or f"receipts_{year}.csv"
+
+    from services.receipt_service import generate_receipts_report
+
+    try:
+        headers, rows = generate_receipts_report(year, csv_format=fmt, owner_id=(int(owner) if owner else None))
+    except ValueError as e:
+        print(f"Error: {e}")
+        return
+
+    out_content = write_csv_file(out, headers, rows)
+    if out == '-':
+        print(out_content)
+    else:
+        print(f"Wrote CSV to {out}")

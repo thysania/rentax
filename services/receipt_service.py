@@ -164,3 +164,105 @@ def create_receipt(assignment_id, period, issue_date, total_amount, base_label=N
         return receipt_id
     finally:
         conn.close()
+
+
+# CSV/Report generation for receipts/payments
+from services.taxes_service import write_csv_file
+
+
+def generate_receipts_report(year, csv_format='detailed', owner_id=None):
+    """Generate receipts/payments report for a year.
+
+    csv_format: 'detailed' (one line per receipt_log with payments),
+                'by-owner' (aggregation per owner),
+                'minimal' (owner,total_received)
+    owner_id: optional owner filter
+
+    Returns: (headers, rows)
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+
+    if csv_format == 'detailed':
+        headers = [
+            'uid', 'receipt_id', 'assignment_id', 'unit_reference', 'owner_id', 'owner_name',
+            'client_id', 'client_name', 'receipt_no', 'period', 'issue_date', 'amount', 'amount_received', 'balance'
+        ]
+        q = """
+        SELECT rl.uid, rl.receipt_id, rl.assignment_id, u.reference AS unit_reference,
+               rl.owner_id, ow.name AS owner_name, rl.client_id, c.name AS client_name,
+               rl.receipt_no, rl.period, rl.issue_date, rl.amount, COALESCE(SUM(p.amount_received), 0.0) as amount_received
+        FROM receipt_log rl
+        JOIN assignments a ON rl.assignment_id = a.id
+        JOIN units u ON a.unit_id = u.id
+        JOIN owners ow ON rl.owner_id = ow.id
+        JOIN clients c ON rl.client_id = c.id
+        LEFT JOIN payments p ON p.receipt_log_uid = rl.uid
+        WHERE substr(rl.period,1,4) = ?
+        """
+        params = [str(year)]
+        if owner_id is not None:
+            q += " AND rl.owner_id = ?"
+            params.append(owner_id)
+        q += " GROUP BY rl.uid ORDER BY rl.uid"
+        cur.execute(q, tuple(params))
+        rows = []
+        for uid, receipt_id, aid, ref, oid, oname, cid, cname, rno, period, issue_date, amount, amt_recv in cur.fetchall():
+            balance = round(amount - amt_recv, 2)
+            rows.append({
+                'uid': uid,
+                'receipt_id': receipt_id,
+                'assignment_id': aid,
+                'unit_reference': ref,
+                'owner_id': oid,
+                'owner_name': oname,
+                'client_id': cid,
+                'client_name': cname,
+                'receipt_no': rno,
+                'period': period,
+                'issue_date': issue_date,
+                'amount': f"{amount:.2f}",
+                'amount_received': f"{amt_recv:.2f}",
+                'balance': f"{balance:.2f}",
+            })
+        conn.close()
+        return headers, rows
+
+    if csv_format == 'by-owner' or csv_format == 'minimal':
+        # aggregate per owner
+        headers = ['owner_id', 'owner_name', 'total_nominal', 'total_received', 'outstanding'] if csv_format == 'by-owner' else ['owner_id', 'owner_name', 'total_received']
+        q = """
+        SELECT rl.owner_id, ow.name as owner_name, COALESCE(SUM(rl.amount),0.0) as total_nominal, COALESCE(SUM(p.amount_received),0.0) as total_received
+        FROM receipt_log rl
+        JOIN owners ow ON rl.owner_id = ow.id
+        LEFT JOIN payments p ON p.receipt_log_uid = rl.uid
+        WHERE substr(rl.period,1,4) = ?
+        GROUP BY rl.owner_id
+        """
+        params = [str(year)]
+        if owner_id is not None:
+            q = q.replace("GROUP BY rl.owner_id", "AND rl.owner_id = ? GROUP BY rl.owner_id")
+            params.append(owner_id)
+        cur.execute(q, tuple(params))
+        rows = []
+        for oid, oname, total_nom, total_recv in cur.fetchall():
+            if csv_format == 'by-owner':
+                outst = round(total_nom - total_recv, 2)
+                rows.append({
+                    'owner_id': oid,
+                    'owner_name': oname,
+                    'total_nominal': f"{total_nom:.2f}",
+                    'total_received': f"{total_recv:.2f}",
+                    'outstanding': f"{outst:.2f}",
+                })
+            else:
+                rows.append({
+                    'owner_id': oid,
+                    'owner_name': oname,
+                    'total_received': f"{total_recv:.2f}",
+                })
+        conn.close()
+        return headers, rows
+
+    conn.close()
+    raise ValueError("Unknown csv_format")
