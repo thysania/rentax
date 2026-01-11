@@ -48,6 +48,10 @@ Notes
 - CSVs are UTF-8, comma-delimited and include a header row.
 - Monetary values are formatted with 2 decimals. The `rounded_tax` column contains the final tax rounded up to the nearest integer (non-negative), as per project policy.
 
+Models folder
+
+The `models/` directory is intended to hold domain model definitions (plain dataclasses or similar) that describe the shape of entities (Owner, Client, Unit, Assignment, Receipt). Currently the files are placeholders but we may introduce small dataclasses and migrate service return values to typed model objects over time to improve validation and clarity.
+
 Contributing
 
 Open issues and PRs are welcome. Run tests with:

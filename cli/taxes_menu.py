@@ -1,4 +1,4 @@
-from services.taxes_service import compute_owner_taxes_for_year
+from services.taxes_service import compute_owner_taxes_for_year, generate_taxes_report, write_csv_file
 
 
 def taxes_menu():
@@ -35,8 +35,8 @@ def taxes_menu():
     if exp == 'y':
         fmt = input("Format - 'detailed' (one owner line), 'by-assignment' (lines per assignment then owner summary), 'minimal' : ").strip() or 'detailed'
         out = input("Output file (path) or '-' for stdout [taxes_{}.csv]: ".format(year)).strip() or f"taxes_{year}.csv"
-        headers, rows = __import__('services.taxes_service', fromlist=['generate_taxes_report']).generate_taxes_report(year, csv_format=fmt, owner_id=(int(owner) if owner else None))
-        out_content = __import__('services.taxes_service', fromlist=['write_csv_file']).write_csv_file(out, headers, rows)
+        headers, rows = generate_taxes_report(year, csv_format=fmt, owner_id=(int(owner) if owner else None))
+        out_content = write_csv_file(out, headers, rows)
         if out == '-':
             print(out_content)
         else:
