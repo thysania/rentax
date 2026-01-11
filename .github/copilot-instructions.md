@@ -44,7 +44,7 @@ Data Layer       → database.py  (SQLite persistence)
   - Calculate owner share: `amount * ownership.share_percent / 100`
   - Handle alternating splits (e.g., only owner A owns in odd months)
 
-**Client Types**: `PP` (person), `PM` (company); affects tax handling. `ras_ir` flag tracks French tax status.
+**Client Types**: `PP` (person), `PM` (company); affects tax handling. Note: `ras_ir` tax flag is tracked on `assignments`, not on `clients`.
 
 ### Adding a New Domain
 

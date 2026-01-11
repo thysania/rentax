@@ -19,8 +19,7 @@ CREATE TABLE IF NOT EXISTS clients (
     name TEXT NOT NULL,
     phone TEXT,
     legal_id TEXT,
-    client_type TEXT NOT NULL CHECK (client_type IN ('PP','PM')),
-    ras_ir INTEGER DEFAULT 0 CHECK (ras_ir IN (0,1))
+    client_type TEXT NOT NULL CHECK (client_type IN ('PP','PM'))
 );
 
 -------------------------------------------------

@@ -4,6 +4,7 @@ from cli.units_menu import units_menu
 from cli.assignments_menu import assignments_menu
 from cli.receipts_menu import receipts_menu
 from cli.taxes_menu import taxes_menu
+from cli.ownerships_menu import ownerships_menu
 
 
 def main_menu():
@@ -15,6 +16,7 @@ def main_menu():
         print("4. Assignments")
         print("5. Receipts")
         print("6. Taxes")
+        print("7. Ownerships")
         print("0. Exit")
 
         choice = input("Choose an option: ").strip()
