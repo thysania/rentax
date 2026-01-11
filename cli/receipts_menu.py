@@ -40,6 +40,28 @@ def add_receipt():
         print("Invalid amount.")
         return
 
+    # Preview split and confirmation
+    from services.receipt_service import compute_receipt_split
+
+    try:
+        split = compute_receipt_split(aid, period, amount_val)
+    except ValueError as e:
+        print(f"Error: {e}")
+        return
+
+    print("\n--- Receipt Preview ---")
+    print("Owner | Share% | Amount")
+    total = 0.0
+    for s in split:
+        print(f"{s['owner_name']} ({s['owner_id']}) | {s['share_percent']} | {s['amount']:.2f}")
+        total += s['amount']
+    print(f"Total: {total:.2f}")
+
+    confirm = input("Create receipt with above split? (y/N): ").strip().lower()
+    if confirm != 'y':
+        print("Receipt creation cancelled.")
+        return
+
     try:
         create_receipt(aid, period, issue_date, amount_val)
         print("Receipt created and split to owners.")

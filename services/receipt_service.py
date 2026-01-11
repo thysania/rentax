@@ -31,6 +31,70 @@ def _month_parity(period):
     return "odd" if dt.month % 2 == 1 else "even"
 
 
+def compute_receipt_split(assignment_id, period, total_amount):
+    """Compute per-owner split for a potential receipt without writing to DB.
+
+    Returns list of entries: {owner_id, owner_name, share_percent, amount}
+    """
+    if total_amount is None:
+        raise ValueError("total_amount is required")
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id, unit_id, client_id FROM assignments WHERE id = ?", (assignment_id,))
+        row = cur.fetchone()
+        if not row:
+            raise ValueError(f"Assignment {assignment_id} not found")
+        unit_id = row["unit_id"]
+
+        cur.execute("SELECT * FROM ownerships WHERE unit_id = ?", (unit_id,))
+        ownerships = cur.fetchall()
+        if not ownerships:
+            raise ValueError("No ownerships defined for unit; cannot split receipt")
+
+        parity = _month_parity(period)
+        applicable = []
+        for o in ownerships:
+            if o["alternate"] == 0:
+                applicable.append(o)
+            else:
+                if o["odd_even"] == parity:
+                    applicable.append(o)
+
+        if not applicable:
+            raise ValueError("No ownership applies for the given period")
+
+        entries = []
+        total_assigned = 0.0
+        for o in applicable:
+            amount = float(total_amount) * float(o["share_percent"]) / 100.0
+            amount = round(amount, 2)
+            total_assigned += amount
+            entries.append({
+                'owner_id': o['owner_id'],
+                'share_percent': float(o['share_percent']),
+                'amount': amount,
+            })
+
+        remainder = round(float(total_amount) - total_assigned, 2)
+        if remainder != 0 and entries:
+            entries[0]['amount'] = round(entries[0]['amount'] + remainder, 2)
+
+        # fetch owner names
+        owner_ids = tuple({e['owner_id'] for e in entries})
+        if owner_ids:
+            placeholders = ','.join('?' for _ in owner_ids)
+            cur.execute(f"SELECT id, name FROM owners WHERE id IN ({placeholders})", owner_ids)
+            names = {r[0]: r[1] for r in cur.fetchall()}
+            for e in entries:
+                e['owner_name'] = names.get(e['owner_id'], '')
+
+        return entries
+    finally:
+        conn.close()
+
+
 def create_receipt(assignment_id, period, issue_date, total_amount, base_label=None):
     if total_amount is None:
         raise ValueError("total_amount is required")
