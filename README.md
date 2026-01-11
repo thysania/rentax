@@ -12,8 +12,6 @@ The taxes CLI can compute owner taxes for a given year and export CSV reports in
 - by-assignment: One line per assignment/receipt (unit reference, city, client, assignment id, gross) followed by an owner summary (same columns as detailed)
 - minimal: One line per owner (owner_id, owner_name, year, gross_revenue, rounded_tax)
 
-Usage (interactive example)
-
 1) Run the CLI and open the Taxes menu:
 
 $ python3 app.py
@@ -24,8 +22,33 @@ $ python3 app.py
 Year (YYYY): 2026
 Owner ID (blank = all owners):  [ENTER]
 Export CSV report? (y/N): y
-Format - 'detailed' (one owner line), 'by-assignment' (lines per assignment then owner summary), 'minimal' : by-assignment
+Select format:
+1. detailed (one owner line)
+2. by-assignment (lines per assignment then owner summary)
+3. minimal
+Choose format [1]: 2
 Output file (path) or '-' for stdout [taxes_2026.csv]: -
+
+The CSV will be printed to stdout.
+
+Receipts CSV export (example)
+
+The receipts menu also supports interactive CSV export with the same numeric format choices. Example interaction to print to stdout:
+
+1) Run the CLI and open the Receipts menu
+$ python3 app.py
+# then choose Receipts
+
+2) Follow the prompts (example printing to stdout):
+
+Year (YYYY): 2026
+Owner ID (blank = all owners):  [ENTER]
+Select format:
+1. detailed (lines per receipt)
+2. by-owner (owner aggregation)
+3. minimal
+Choose format [1]: 1
+Output file (path) or '-' for stdout [receipts_2026.csv]: -
 
 The CSV will be printed to stdout.
 
