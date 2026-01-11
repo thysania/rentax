@@ -124,8 +124,14 @@ def export_receipts_csv():
         print("Invalid year format.")
         return
     year = int(year)
-    fmt = input("Format - 'detailed' (lines per receipt), 'by-owner' (owner aggregation), 'minimal' : ").strip() or 'detailed'
-    out = input("Output file (path) or '-' for stdout [receipts_{year}.csv]: ").strip() or f"receipts_{year}.csv"
+    print("Select format:")
+    print("1. detailed (lines per receipt)")
+    print("2. by-owner (owner aggregation)")
+    print("3. minimal")
+    fmt_choice = input("Choose format [1]: ").strip() or '1'
+    fmt_map = {'1': 'detailed', '2': 'by-owner', '3': 'minimal'}
+    fmt = fmt_map.get(fmt_choice, 'detailed')
+    out = input(f"Output file (path) or '-' for stdout [receipts_{year}.csv]: ").strip() or f"receipts_{year}.csv"
 
     from services.receipt_service import generate_receipts_report
 

@@ -103,7 +103,7 @@ def test_cli_export_receipts_stdout(tmp_path, monkeypatch, capsys):
         '4',
         '2026',
         '',
-        'detailed',
+        '1',
         '-',
         '0'
     ])

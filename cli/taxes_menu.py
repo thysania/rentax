@@ -33,7 +33,13 @@ def taxes_menu():
     # Offer CSV export
     exp = input("Export CSV report? (y/N): ").strip().lower()
     if exp == 'y':
-        fmt = input("Format - 'detailed' (one owner line), 'by-assignment' (lines per assignment then owner summary), 'minimal' : ").strip() or 'detailed'
+        print("Select format:")
+        print("1. detailed (one owner line)")
+        print("2. by-assignment (lines per assignment then owner summary)")
+        print("3. minimal")
+        fmt_choice = input("Choose format [1]: ").strip() or '1'
+        fmt_map = {'1': 'detailed', '2': 'by-assignment', '3': 'minimal'}
+        fmt = fmt_map.get(fmt_choice, 'detailed')
         out = input("Output file (path) or '-' for stdout [taxes_{}.csv]: ".format(year)).strip() or f"taxes_{year}.csv"
         headers, rows = generate_taxes_report(year, csv_format=fmt, owner_id=(int(owner) if owner else None))
         out_content = write_csv_file(out, headers, rows)

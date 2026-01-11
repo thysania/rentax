@@ -141,8 +141,8 @@ def test_taxes_cli_export_csv_by_assignment(tmp_path, monkeypatch, capsys):
     inputs = iter([
         '2026',  # Year
         '',      # Owner blank (all owners)
-        'y',     # Export YAML
-        'by-assignment',
+        'y',     # Export CSV
+        '2',     # by-assignment format (numeric menu)
         '-',     # stdout
     ])
     monkeypatch.setattr('builtins.input', lambda prompt='': next(inputs))
@@ -226,7 +226,7 @@ def test_taxes_cli_export_csv_detailed(tmp_path, monkeypatch, capsys):
         '2026',
         '',
         'y',
-        'detailed',
+        '1',
         '-',
     ])
     monkeypatch.setattr('builtins.input', lambda prompt='': next(inputs))
