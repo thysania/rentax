@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS owners (
     name TEXT NOT NULL,
     phone TEXT,
     legal_id TEXT,
-    family_deduction INTEGER DEFAULT 0
+    family_count INTEGER DEFAULT 0
 );
 
 -------------------------------------------------
@@ -90,4 +90,16 @@ CREATE TABLE IF NOT EXISTS receipt_log (
     FOREIGN KEY (assignment_id) REFERENCES assignments(id),
     FOREIGN KEY (owner_id) REFERENCES owners(id),
     FOREIGN KEY (client_id) REFERENCES clients(id)
+);
+
+-------------------------------------------------
+-- PAYMENTS (records actual amounts received per receipt log)
+-------------------------------------------------
+CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    receipt_log_uid INTEGER NOT NULL,
+    amount_received REAL NOT NULL,
+    received_at TEXT,
+    note TEXT,
+    FOREIGN KEY (receipt_log_uid) REFERENCES receipt_log(uid)
 );
