@@ -7,9 +7,8 @@ CREATE TABLE IF NOT EXISTS owners (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     phone TEXT,
-    cnie TEXT,
-    family_deduction INTEGER DEFAULT 0,
-    salary REAL DEFAULT 0
+    legal_id TEXT,
+    family_deduction INTEGER DEFAULT 0
 );
 
 -------------------------------------------------
@@ -19,7 +18,7 @@ CREATE TABLE IF NOT EXISTS clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     phone TEXT,
-    cnie TEXT,
+    legal_id TEXT,
     client_type TEXT NOT NULL CHECK (client_type IN ('PP','PM')),
     ras_ir INTEGER DEFAULT 0 CHECK (ras_ir IN (0,1))
 );
@@ -33,8 +32,7 @@ CREATE TABLE IF NOT EXISTS units (
     city TEXT,
     neighborhood TEXT,
     floor INTEGER,
-    unit_type TEXT CHECK (unit_type IN ('apt','store','house')),
-    status TEXT DEFAULT 'vacant' CHECK (status IN ('vacant','occupied'))
+    unit_type TEXT CHECK (unit_type IN ('apt','store','building'))
 );
 
 -------------------------------------------------
@@ -61,7 +59,7 @@ CREATE TABLE IF NOT EXISTS assignments (
     start_date TEXT NOT NULL,
     end_date TEXT,
     rent_amount REAL NOT NULL,
-    active INTEGER DEFAULT 1 CHECK (active IN (0,1)),
+    ras_ir
     FOREIGN KEY (unit_id) REFERENCES units(id),
     FOREIGN KEY (client_id) REFERENCES clients(id)
 );
