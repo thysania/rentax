@@ -109,3 +109,48 @@ def test_assignments_cli_add_and_list(tmp_path, monkeypatch, capsys):
     assert 'U-ASS' in out
     assert 'Client-ASS' in out
     assert '750' in out
+
+
+def test_taxes_cli_export_csv_by_assignment(tmp_path, monkeypatch, capsys):
+    db = _setup_db(tmp_path, monkeypatch)
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+
+    # Setup owner/unit/client and receipts
+    cur.execute("INSERT INTO owners (name, family_count, legal_id) VALUES ('Owner-CSV', 0, 'LID-CSV')")
+    cur.execute("INSERT INTO units (reference, city) VALUES ('U-CSV','CityCSV')")
+    cur.execute("INSERT INTO clients (name, client_type, legal_id) VALUES ('Client-CSV','PP','CLID-CSV')")
+    conn.commit()
+
+    owner_id = cur.execute("SELECT id FROM owners LIMIT 1").fetchone()[0]
+    unit_id = cur.execute("SELECT id FROM units LIMIT 1").fetchone()[0]
+    client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
+
+    cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, owner_id, 100))
+    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 1000, 0)", (unit_id, client_id))
+    conn.commit()
+
+    aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
+    import services.receipt_service as rsvc
+    rsvc.create_receipt(aid, '2026-01-01', '2026-01-05', 1000)
+    rsvc.create_receipt(aid, '2026-02-01', '2026-02-05', 2000)
+
+    conn.close()
+
+    # Simulate CLI input: year, blank owner, export yes, format, stdout
+    inputs = iter([
+        '2026',  # Year
+        '',      # Owner blank (all owners)
+        'y',     # Export YAML
+        'by-assignment',
+        '-',     # stdout
+    ])
+    monkeypatch.setattr('builtins.input', lambda prompt='': next(inputs))
+
+    from cli.taxes_menu import taxes_menu
+    taxes_menu()
+    out = capsys.readouterr().out
+
+    # CSV header and one unit reference should be present in the output
+    assert 'unit_reference' in out
+    assert 'U-CSV' in out
