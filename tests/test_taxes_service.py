@@ -39,7 +39,10 @@ def test_tax_zero_for_low_income(tmp_path, monkeypatch):
 
     # Create ownership and assignment and one receipt split
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, owner_id, 100))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 1000, 0)", (unit_id, client_id))
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', None, 1000, 0))
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
@@ -78,7 +81,10 @@ def test_tax_calculation_with_family_and_ras(tmp_path, monkeypatch):
 
     # ownership + assignment
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, owner_id, 100))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 10000, 0)", (unit_id, client_id))
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', None, 10000, 0))
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]

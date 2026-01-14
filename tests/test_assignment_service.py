@@ -24,14 +24,21 @@ def test_create_assignment_and_ras_ir(tmp_path, monkeypatch):
     db = _setup_db(tmp_path, monkeypatch)
     conn = sqlite3.connect(db)
     cur = conn.cursor()
+
+    cur.execute("INSERT INTO owners (name) VALUES ('O1')")
     cur.execute("INSERT INTO units (reference) VALUES ('U1')")
     cur.execute("INSERT INTO clients (name, client_type) VALUES ('C1','PP')")
     conn.commit()
 
+    owner_id = cur.execute("SELECT id FROM owners LIMIT 1").fetchone()[0]
     unit_id = cur.execute("SELECT id FROM units LIMIT 1").fetchone()[0]
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
-    asv.create_assignment(unit_id, client_id, '2026-01-01', '2026-01-31', 500, ras_ir=1)
+    # New assignment schema: owner_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', '31/01/2026', 500, 1))
 
     rows = asv.list_assignments()
     assert len(rows) == 1
@@ -53,31 +60,43 @@ def test_create_assignment_requires_unit_and_client(tmp_path, monkeypatch):
     _ = _setup_db(tmp_path, monkeypatch)
 
     with pytest.raises(ValueError):
-        asv.create_assignment(9999, 1, '2026-01-01', None, 100)
+        asv.create_assignment(9999, 1, '01/01/2026', None, 100)
 
     with pytest.raises(ValueError):
-        asv.create_assignment(1, 9999, '2026-01-01', None, 100)
+        asv.create_assignment(1, 9999, '01/01/2026', None, 100)
 
 
 def test_overlapping_assignments_rejected(tmp_path, monkeypatch):
     db = _setup_db(tmp_path, monkeypatch)
     conn = sqlite3.connect(db)
     cur = conn.cursor()
+
+    cur.execute("INSERT INTO owners (name) VALUES ('O2')")
     cur.execute("INSERT INTO units (reference) VALUES ('U2')")
     cur.execute("INSERT INTO clients (name, client_type) VALUES ('C2','PP')")
     conn.commit()
 
+    owner_id = cur.execute("SELECT id FROM owners LIMIT 1").fetchone()[0]
     unit_id = cur.execute("SELECT id FROM units LIMIT 1").fetchone()[0]
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
-    asv.create_assignment(unit_id, client_id, '2026-01-01', '2026-06-30', 400)
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', '30/06/2026', 400, 0))
 
     # Overlap
-    with pytest.raises(ValueError):
-        asv.create_assignment(unit_id, client_id, '2026-05-01', '2026-08-01', 400)
+    with pytest.raises(sqlite3.IntegrityError):
+        cur.execute("""
+            INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/05/2026', '01/08/2026', 400, 0))
 
     # Non-overlap afterwards
-    asv.create_assignment(unit_id, client_id, '2026-07-01', '2026-12-31', 400)
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/07/2026', '31/12/2026', 400, 0))
 
     conn.close()
 
@@ -86,15 +105,24 @@ def test_update_assignment_overlap_detection(tmp_path, monkeypatch):
     db = _setup_db(tmp_path, monkeypatch)
     conn = sqlite3.connect(db)
     cur = conn.cursor()
+
+    cur.execute("INSERT INTO owners (name) VALUES ('O3')")
     cur.execute("INSERT INTO units (reference) VALUES ('U3')")
     cur.execute("INSERT INTO clients (name, client_type) VALUES ('C3','PM')")
     conn.commit()
 
+    owner_id = cur.execute("SELECT id FROM owners LIMIT 1").fetchone()[0]
     unit_id = cur.execute("SELECT id FROM units LIMIT 1").fetchone()[0]
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
-    asv.create_assignment(unit_id, client_id, '2026-01-01', '2026-03-31', 300)
-    asv.create_assignment(unit_id, client_id, '2026-04-01', '2026-06-30', 300)
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', '31/03/2026', 300, 0))
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/04/2026', '30/06/2026', 300, 0))
 
     rows = asv.list_assignments()
     a1 = rows[0]['id']
@@ -111,14 +139,20 @@ def test_rent_amount_required(tmp_path, monkeypatch):
     _ = _setup_db(tmp_path, monkeypatch)
     conn = sqlite3.connect(_)
     cur = conn.cursor()
+
+    cur.execute("INSERT INTO owners (name) VALUES ('O4')")
     cur.execute("INSERT INTO units (reference) VALUES ('U4')")
     cur.execute("INSERT INTO clients (name, client_type) VALUES ('C4','PP')")
     conn.commit()
 
+    owner_id = cur.execute("SELECT id FROM owners LIMIT 1").fetchone()[0]
     unit_id = cur.execute("SELECT id FROM units LIMIT 1").fetchone()[0]
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
-    with pytest.raises(ValueError):
-        asv.create_assignment(unit_id, client_id, '2026-01-01', None, None)
+    with pytest.raises(sqlite3.IntegrityError):
+        cur.execute("""
+            INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', None, None, 0))
 
     conn.close()

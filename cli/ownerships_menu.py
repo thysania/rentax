@@ -70,6 +70,7 @@ def show_ownerships():
 
     if not rows:
         print("No ownerships found.")
+        input("\nPress Enter to return...")
         return
 
     print("\nID | Unit Ref | Owner | Share% | Alternate | Odd/Even")

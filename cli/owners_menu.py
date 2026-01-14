@@ -37,6 +37,7 @@ def show_owners():
 
     if not owners:
         print("No owners found.")
+        input("\nPress Enter to return...")
         return
 
     print("\nID | Name | Phone | Legal ID | Family Count")

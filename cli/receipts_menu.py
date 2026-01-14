@@ -5,7 +5,7 @@ from services.taxes_service import write_csv_file
 def receipts_menu():
     while True:
         print("\n=== Receipts ===")
-        print("1. Create receipt (split and log)")
+        print("1. Generate receipts for a month (batch)")
         print("2. Show receipt logs")
         print("3. Record payment for receipt log UID")
         print("4. Export receipts/payments CSV")
@@ -13,53 +13,16 @@ def receipts_menu():
 
         choice = input("Choose an option: ").strip()
 
+
         if choice == "1":
-            add_receipt()
-        elif choice == "2":
-            show_receipt_logs()
-        elif choice == "3":
-            record_payment()
-        elif choice == "4":
-            export_receipts_csv()
-        elif choice == "0":
-            break
-        else:
-            print("Invalid choice.")
-
-
-def add_receipt():
-    aid = input("Assignment ID: ").strip()
-    period = input("Period (YYYY-MM-DD): ").strip()
-    issue_date = input("Issue date (YYYY-MM-DD): ").strip()
-    amount = input("Total amount: ").strip()
-
-    if not aid.isdigit():
-        print("Assignment ID must be numeric.")
-        return
-    aid = int(aid)
-
-    try:
-        amount_val = float(amount)
-    except Exception:
-        print("Invalid amount.")
-        return
-
-    # Preview split and confirmation
-    from services.receipt_service import compute_receipt_split
-
-    try:
-        split = compute_receipt_split(aid, period, amount_val)
-    except ValueError as e:
-        print(f"Error: {e}")
-        return
-
-    print("\n--- Receipt Preview ---")
-    print("Owner | Share% | Amount")
-    total = 0.0
-    for s in split:
-        print(f"{s['owner_name']} ({s['owner_id']}) | {s['share_percent']} | {s['amount']:.2f}")
-        total += s['amount']
-    print(f"Total: {total:.2f}")
+            from services.receipt_service import batch_generate_receipts_for_month
+            month = input("Enter month to generate receipts for (mm/yyyy): ").strip()
+            issue_date = input("Issue date for all receipts (dd/mm/yyyy): ").strip()
+            try:
+                count = batch_generate_receipts_for_month(month, issue_date)
+                print(f"Generated {count} receipts for {month}.")
+            except Exception as e:
+                print(f"Error: {e}")
 
     confirm = input("Create receipt with above split? (y/N): ").strip().lower()
     if confirm != 'y':
@@ -96,7 +59,7 @@ def record_payment():
 
     uid = input("Receipt log UID: ").strip()
     amount = input("Amount received: ").strip()
-    received_at = input("Received date (YYYY-MM-DD) [today]: ").strip()
+    received_at = input("Received date (dd/mm/yyyy) [today]: ").strip()
     note = input("Note (optional): ").strip()
 
     if not uid.isdigit():

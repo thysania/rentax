@@ -7,9 +7,9 @@ DATE_MAX = "9999-12-31"
 
 def _parse_date(date_str):
     try:
-        return datetime.strptime(date_str, "%Y-%m-%d").date()
+        return datetime.strptime(date_str, "%d/%m/%Y").date()
     except Exception:
-        raise ValueError("Dates must be in YYYY-MM-DD format")
+        raise ValueError("Dates must be in dd/mm/yyyy format")
 
 
 def _ensure_unit_and_client_exist(conn, unit_id, client_id):
@@ -51,16 +51,25 @@ def _check_overlap(conn, unit_id, start_date, end_date, exclude_assignment_id=No
     return cur.fetchone() is not None
 
 
-def create_assignment(unit_id, client_id, start_date, end_date=None, rent_amount=None, ras_ir=0):
+
+def create_assignment(unit_id, owner_id, client_id, share_percent, alternation_type='none', cycle_length=None, cycle_position=None, start_date=None, end_date=None, rent_amount=None, ras_ir=0):
     if rent_amount is None:
         raise ValueError("rent_amount is required")
+    if share_percent is None:
+        raise ValueError("share_percent is required")
+    if owner_id is None:
+        raise ValueError("owner_id is required")
+    if alternation_type not in ('none', 'odd_even', 'cycle'):
+        raise ValueError("alternation_type must be one of 'none', 'odd_even', 'cycle'")
     try:
         start = _parse_date(start_date)
-    except ValueError:
-        raise
-
+    except Exception:
+        raise ValueError("start_date must be in dd/mm/yyyy format")
     if end_date is not None:
-        end = _parse_date(end_date)
+        try:
+            end = _parse_date(end_date)
+        except Exception:
+            raise ValueError("end_date must be in dd/mm/yyyy format")
         if end < start:
             raise ValueError("end_date cannot be before start_date")
     if ras_ir not in (0, 1):
@@ -68,19 +77,28 @@ def create_assignment(unit_id, client_id, start_date, end_date=None, rent_amount
 
     conn = get_connection()
     try:
-        _ensure_unit_and_client_exist(conn, unit_id, client_id)
+        # Check FKs
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM units WHERE id = ?", (unit_id,))
+        if not cur.fetchone():
+            raise ValueError(f"Unit {unit_id} not found")
+        cur.execute("SELECT id FROM owners WHERE id = ?", (owner_id,))
+        if not cur.fetchone():
+            raise ValueError(f"Owner {owner_id} not found")
+        cur.execute("SELECT id FROM clients WHERE id = ?", (client_id,))
+        if not cur.fetchone():
+            raise ValueError(f"Client {client_id} not found")
 
-        # Check overlap
+        # Check overlap (per unit, per period)
         if _check_overlap(conn, unit_id, start_date, end_date):
             raise ValueError("Assignment overlaps with an existing assignment for this unit")
 
-        cur = conn.cursor()
         cur.execute(
             """
-            INSERT INTO assignments (unit_id, client_id, start_date, end_date, rent_amount, ras_ir)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (unit_id, client_id, start_date, end_date, rent_amount, ras_ir),
+            (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir),
         )
         conn.commit()
     finally:

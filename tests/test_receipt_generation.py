@@ -26,6 +26,7 @@ def test_receipt_splitting_basic(tmp_path, monkeypatch):
     cur = conn.cursor()
 
     # Setup unit, owners, client, assignment
+
     cur.execute("INSERT INTO units (reference) VALUES ('U-SPL')")
     cur.execute("INSERT INTO owners (name) VALUES ('O1')")
     cur.execute("INSERT INTO owners (name) VALUES ('O2')")
@@ -39,7 +40,10 @@ def test_receipt_splitting_basic(tmp_path, monkeypatch):
 
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, o1, 60))
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, o2, 40))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 100, 0)", (unit_id, client_id))
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, o1, client_id, 60, 'none', None, None, '01/01/2026', None, 100, 0))
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
@@ -60,6 +64,7 @@ def test_receipt_alternating(tmp_path, monkeypatch):
     cur = conn.cursor()
 
     # Setup unit, owners, client, assignment
+
     cur.execute("INSERT INTO units (reference) VALUES ('U-ALT')")
     cur.execute("INSERT INTO owners (name) VALUES ('OddOwner')")
     cur.execute("INSERT INTO owners (name) VALUES ('EvenOwner')")
@@ -73,7 +78,10 @@ def test_receipt_alternating(tmp_path, monkeypatch):
 
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate, odd_even) VALUES (?, ?, ?, 1, 'odd')", (unit_id, o_odd, 100))
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate, odd_even) VALUES (?, ?, ?, 1, 'even')", (unit_id, o_even, 100))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 200, 0)", (unit_id, client_id))
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, o_odd, client_id, 100, 'odd_even', None, None, '01/01/2026', None, 200, 0))
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
@@ -93,6 +101,7 @@ def test_receipt_incrementing_number_and_rounding(tmp_path, monkeypatch):
     conn = sqlite3.connect(db)
     cur = conn.cursor()
 
+
     cur.execute("INSERT INTO units (reference) VALUES ('U-ROUND')")
     cur.execute("INSERT INTO owners (name) VALUES ('O1')")
     cur.execute("INSERT INTO owners (name) VALUES ('O2')")
@@ -107,7 +116,10 @@ def test_receipt_incrementing_number_and_rounding(tmp_path, monkeypatch):
     # 33% and 67% shares
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, o1, 33))
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, o2, 67))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 100, 0)", (unit_id, client_id))
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, o1, client_id, 33, 'none', None, None, '01/01/2026', None, 100, 0))
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]

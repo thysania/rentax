@@ -33,7 +33,10 @@ def test_record_payment_via_cli(tmp_path, monkeypatch, capsys):
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, owner_id, 100))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 1000, 0)", (unit_id, client_id))
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', None, 1000, 0))
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
@@ -54,8 +57,7 @@ def test_record_payment_via_cli(tmp_path, monkeypatch, capsys):
         '900',
         '2026-01-06',
         'partial payment',
-        '0'  # exit
-    ])
+    ] + ['0']*50)
     monkeypatch.setattr('builtins.input', lambda prompt='': next(inputs))
 
     from cli.receipts_menu import receipts_menu
@@ -89,7 +91,10 @@ def test_payments_affect_taxes(tmp_path, monkeypatch):
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, owner_id, 100))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 1000, 0)", (unit_id, client_id))
+    cur.execute("""
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', None, 1000, 0))
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]

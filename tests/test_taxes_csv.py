@@ -33,7 +33,13 @@ def test_generate_minimal_csv(tmp_path, monkeypatch):
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, owner_id, 100))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 1000, 0)", (unit_id, client_id))
+    cur.execute(
+        """
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', None, 1000, 0),
+    )
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
@@ -72,7 +78,13 @@ def test_generate_by_assignment_csv(tmp_path, monkeypatch):
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, owner_id, 100))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 1000, 0)", (unit_id, client_id))
+    cur.execute(
+        """
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', None, 1000, 0),
+    )
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]

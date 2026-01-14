@@ -54,12 +54,18 @@ CREATE TABLE IF NOT EXISTS ownerships (
 CREATE TABLE IF NOT EXISTS assignments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     unit_id INTEGER NOT NULL,
+    owner_id INTEGER NOT NULL,
     client_id INTEGER NOT NULL,
+    share_percent REAL,
+    alternation_type TEXT CHECK (alternation_type IN ('none','odd_even','cycle')) DEFAULT 'none',
+    cycle_length INTEGER,
+    cycle_position INTEGER,
     start_date TEXT NOT NULL,
     end_date TEXT,
     rent_amount REAL NOT NULL,
     ras_ir INTEGER DEFAULT 0 CHECK (ras_ir IN (0,1)),
     FOREIGN KEY (unit_id) REFERENCES units(id),
+    FOREIGN KEY (owner_id) REFERENCES owners(id),
     FOREIGN KEY (client_id) REFERENCES clients(id)
 );
 

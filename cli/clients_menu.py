@@ -50,6 +50,7 @@ def show_clients():
 
     if not clients:
         print("No clients found.")
+        input("\nPress Enter to return...")
         return
 
     print("\nID | Name | Type | Phone | Legal ID")

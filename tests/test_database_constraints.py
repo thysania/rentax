@@ -93,8 +93,11 @@ def test_receipt_log_foreign_keys(tmp_path, monkeypatch):
 
     # Create assignment and receipt
     cur.execute(
-        "INSERT INTO assignments (unit_id, client_id, start_date, rent_amount) VALUES (?, ?, '2026-01-01', 500)",
-        (unit_id, client_id),
+        """
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', None, 500, 0),
     )
     conn.commit()
 

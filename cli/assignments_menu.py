@@ -36,8 +36,8 @@ def assignments_menu():
 def add_assignment():
     unit_id = input("Unit ID: ").strip()
     client_id = input("Client ID: ").strip()
-    start_date = input("Start date (YYYY-MM-DD): ").strip()
-    end_date = input("End date (YYYY-MM-DD, optional): ").strip() or None
+    start_date = input("Start date (dd/mm/yyyy): ").strip()
+    end_date = input("End date (dd/mm/yyyy, optional): ").strip() or None
     rent_amount = input("Rent amount: ").strip()
     ras_ir = input("ras_ir (0 or 1, default 0): ").strip()
 
@@ -71,6 +71,7 @@ def show_assignments():
 
     if not rows:
         print("No assignments found.")
+        input("\nPress Enter to return...")
         return
 
     print("\nID | Unit Ref | Client | Start | End | Rent | ras_ir")
@@ -96,8 +97,8 @@ def edit_assignment():
         return
 
     print("Leave blank to keep current value.")
-    start_date = input(f"Start date [{row['start_date']}]: ").strip() or None
-    end_date = input(f"End date [{row['end_date'] or ''}]: ").strip() or None
+    start_date = input(f"Start date [{row['start_date']} dd/mm/yyyy]: ").strip() or None
+    end_date = input(f"End date [{row['end_date'] or ''} dd/mm/yyyy]: ").strip() or None
     rent = input(f"Rent amount [{row['rent_amount']}]: ").strip() or None
     ras_ir = input(f"ras_ir [{row['ras_ir']}]: ").strip()
     ras_ir_val = int(ras_ir) if ras_ir in ("0", "1") else None

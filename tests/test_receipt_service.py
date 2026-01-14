@@ -35,7 +35,13 @@ def test_list_receipt_logs_with_names(tmp_path, monkeypatch):
     owner_id = cur.execute("SELECT id FROM owners LIMIT 1").fetchone()[0]
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 200, 0)", (unit_id, client_id))
+    cur.execute(
+        """
+        INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (unit_id, owner_id, client_id, 100, 'none', None, None, '01/01/2026', None, 200, 0),
+    )
     conn.commit()
     assignment_id = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
 

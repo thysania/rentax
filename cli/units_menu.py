@@ -52,6 +52,7 @@ def show_units():
 
     if not units:
         print("No units found.")
+        input("\nPress Enter to return...")
         return
 
     print("\nID | Reference | City | Neighborhood | Floor | Type")

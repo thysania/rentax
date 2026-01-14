@@ -82,9 +82,11 @@ def test_assignments_cli_add_and_list(tmp_path, monkeypatch, capsys):
     db = _setup_db(tmp_path, monkeypatch)
     conn = sqlite3.connect(db)
     cur = conn.cursor()
+    cur.execute("INSERT INTO owners (name) VALUES ('Owner-ASS')")
     cur.execute("INSERT INTO units (reference) VALUES ('U-ASS')")
     cur.execute("INSERT INTO clients (name, client_type) VALUES ('Client-ASS','PP')")
     conn.commit()
+    owner_id = cur.execute("SELECT id FROM owners LIMIT 1").fetchone()[0]
     unit_id = cur.execute("SELECT id FROM units LIMIT 1").fetchone()[0]
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
     conn.close()
@@ -92,9 +94,14 @@ def test_assignments_cli_add_and_list(tmp_path, monkeypatch, capsys):
     inputs = iter([
         '1',  # Add assignment
         str(unit_id),
+        str(owner_id),
         str(client_id),
-        '2026-01-01',
+        '01/01/2026',
         '',      # end date blank
+        '100',  # share_percent
+        'none', # alternation_type
+        '',     # cycle_length
+        '',     # cycle_position
         '750',   # rent
         '0',     # ras_ir
         '2',     # List

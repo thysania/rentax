@@ -1,3 +1,67 @@
+# Batch receipt generation for a month from assignments
+from datetime import datetime
+
+def batch_generate_receipts_for_month(month_str, issue_date_str):
+    """
+    Generate receipts for all assignments active in the given month (mm/yyyy), using assignment alternation/share logic.
+    Returns the number of receipts generated.
+    """
+    # Parse month and issue date
+    try:
+        month_dt = datetime.strptime(month_str, "%m/%Y")
+        period = month_dt.strftime("%Y-%m-01")
+    except Exception:
+        raise ValueError("Month must be in mm/yyyy format")
+    try:
+        issue_dt = datetime.strptime(issue_date_str, "%d/%m/%Y")
+        issue_date = issue_dt.strftime("%Y-%m-%d")
+    except Exception:
+        raise ValueError("Issue date must be in dd/mm/yyyy format")
+
+    conn = get_connection()
+    cur = conn.cursor()
+    # Find all assignments active in this month
+    cur.execute("""
+        SELECT id, unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount
+        FROM assignments
+        WHERE start_date <= ? AND (end_date IS NULL OR end_date >= ?)
+    """, (period, period))
+    assignments = cur.fetchall()
+    count = 0
+    for a in assignments:
+        # Alternation logic
+        eligible = True
+        if a[5] == 'odd_even':
+            parity = 'odd' if month_dt.month % 2 == 1 else 'even'
+            # Only generate if cycle_position matches parity
+            if (a[7] == 1 and parity != 'odd') or (a[7] == 2 and parity != 'even'):
+                eligible = False
+        elif a[5] == 'cycle' and a[6]:
+            # General cycle: e.g. 3 months on, 3 off
+            cycle_len = int(a[6])
+            pos = int(a[7]) if a[7] else 1
+            # Determine if this assignment is active this month in the cycle
+            months_since_start = (month_dt.year - int(a[8][:4])) * 12 + (month_dt.month - int(a[8][5:7]))
+            if months_since_start < 0 or (months_since_start // cycle_len) % 2 != 0:
+                eligible = False
+        if not eligible:
+            continue
+        # Amount/share
+        amount = float(a[10])
+        share = float(a[4]) if a[4] is not None else 100.0
+        owner_amount = round(amount * share / 100.0, 2)
+        # Insert receipt
+        cur.execute("INSERT INTO receipts (assignment_id, base_label) VALUES (?, ?)", (a[0], None))
+        receipt_id = cur.lastrowid
+        # Insert receipt_log
+        cur.execute(
+            "INSERT INTO receipt_log (receipt_id, assignment_id, owner_id, client_id, receipt_no, period, issue_date, amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (receipt_id, a[0], a[2], a[3], 1, period, issue_date, owner_amount)
+        )
+        count += 1
+    conn.commit()
+    conn.close()
+    return count
 from database import get_connection
 from datetime import datetime
 
@@ -27,7 +91,10 @@ def _month_parity(period):
     try:
         dt = datetime.strptime(period, "%Y-%m-%d")
     except Exception:
-        raise ValueError("period must be YYYY-MM-DD date string")
+        try:
+            dt = datetime.strptime(period, "%d/%m/%Y")
+        except Exception:
+            raise ValueError("period must be dd/mm/yyyy or YYYY-MM-DD date string")
     return "odd" if dt.month % 2 == 1 else "even"
 
 
