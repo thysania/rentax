@@ -13,7 +13,6 @@ def receipts_menu():
 
         choice = input("Choose an option: ").strip()
 
-
         if choice == "1":
             from services.receipt_service import batch_generate_receipts_for_month
             month = input("Enter month to generate receipts for (mm/yyyy): ").strip()
@@ -23,17 +22,16 @@ def receipts_menu():
                 print(f"Generated {count} receipts for {month}.")
             except Exception as e:
                 print(f"Error: {e}")
-
-    confirm = input("Create receipt with above split? (y/N): ").strip().lower()
-    if confirm != 'y':
-        print("Receipt creation cancelled.")
-        return
-
-    try:
-        create_receipt(aid, period, issue_date, amount_val)
-        print("Receipt created and split to owners.")
-    except ValueError as e:
-        print(f"Error: {e}")
+        elif choice == "2":
+            show_receipt_logs()
+        elif choice == "3":
+            record_payment()
+        elif choice == "4":
+            export_receipts_csv()
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice.")
 
 
 def show_receipt_logs():

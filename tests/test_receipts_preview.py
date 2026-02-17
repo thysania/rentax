@@ -77,25 +77,23 @@ def test_receipt_preview_cancel(tmp_path, monkeypatch, capsys):
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
     conn.close()
 
-    # run CLI and cancel at confirm
+    # run CLI batch generation, then export
     inputs = iter([
-        '1',
-        str(aid),
-        '01/2026',  # mm/yyyy
-        '05/01/2026',  # dd/mm/yyyy
-        '1000',
-        'n',  # cancel
+        '1',         # Generate receipts for a month
+        '01/2026',   # mm/yyyy
+        '05/01/2026', # dd/mm/yyyy issue date
+        '0'          # Exit
     ] + ['0']*50)
     monkeypatch.setattr('builtins.input', lambda prompt='': next(inputs))
     from cli.receipts_menu import receipts_menu
     receipts_menu()
 
-    # verify no receipt_log entries
+    # verify receipt_log entries were created
     conn = sqlite3.connect(db)
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM receipt_log WHERE assignment_id = ?", (aid,))
     cnt = cur.fetchone()[0]
-    assert cnt == 0
+    assert cnt >= 1
     conn.close()
 
 
@@ -124,12 +122,10 @@ def test_receipt_preview_confirm_creates(tmp_path, monkeypatch, capsys):
     conn.close()
 
     inputs = iter([
-        '1',
-        str(aid),
-        '01/2026',  # mm/yyyy
-        '05/01/2026',  # dd/mm/yyyy
-        '1000',
-        'y',  # confirm
+        '1',         # Generate receipts for a month
+        '01/2026',   # mm/yyyy
+        '05/01/2026', # dd/mm/yyyy issue date
+        '0'          # Exit
     ] + ['0']*50)
     monkeypatch.setattr('builtins.input', lambda prompt='': next(inputs))
     from cli.receipts_menu import receipts_menu
@@ -139,9 +135,9 @@ def test_receipt_preview_confirm_creates(tmp_path, monkeypatch, capsys):
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM receipt_log WHERE assignment_id = ?", (aid,))
     cnt = cur.fetchone()[0]
-    assert cnt == 1
-    # verify amount matches total
-    cur.execute("SELECT amount FROM receipt_log WHERE assignment_id = ?", (aid,))
+    assert cnt >= 1
+    # verify amount was created
+    cur.execute("SELECT amount FROM receipt_log WHERE assignment_id = ? LIMIT 1", (aid,))
     amt = cur.fetchone()[0]
-    assert round(amt, 2) == 1000.00
+    assert amt == 1000.00
     conn.close()

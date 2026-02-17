@@ -63,15 +63,19 @@ def create_assignment(unit_id, owner_id, client_id, share_percent, alternation_t
         raise ValueError("alternation_type must be one of 'none', 'odd_even', 'cycle'")
     try:
         start = _parse_date(start_date)
+        start_iso = start.isoformat()
     except Exception:
         raise ValueError("start_date must be in dd/mm/yyyy format")
     if end_date is not None:
         try:
             end = _parse_date(end_date)
+            end_iso = end.isoformat()
         except Exception:
             raise ValueError("end_date must be in dd/mm/yyyy format")
         if end < start:
             raise ValueError("end_date cannot be before start_date")
+    else:
+        end_iso = None
     if ras_ir not in (0, 1):
         raise ValueError("ras_ir must be 0 or 1")
 
@@ -90,7 +94,7 @@ def create_assignment(unit_id, owner_id, client_id, share_percent, alternation_t
             raise ValueError(f"Client {client_id} not found")
 
         # Check overlap (per unit, per period)
-        if _check_overlap(conn, unit_id, start_date, end_date):
+        if _check_overlap(conn, unit_id, start_iso, end_iso):
             raise ValueError("Assignment overlaps with an existing assignment for this unit")
 
         cur.execute(
@@ -98,7 +102,7 @@ def create_assignment(unit_id, owner_id, client_id, share_percent, alternation_t
             INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount, ras_ir),
+            (unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_iso, end_iso, rent_amount, ras_ir),
         )
         conn.commit()
     finally:
@@ -142,8 +146,9 @@ def get_assignment(assignment_id):
 
 
 def update_assignment(assignment_id, start_date=None, end_date=None, rent_amount=None, ras_ir=None):
+    start_iso = None
     if start_date is not None:
-        _parse_date(start_date)
+        start_iso = _parse_date(start_date).isoformat()
     if end_date is not None:
         _parse_date(end_date)
     if ras_ir is not None and ras_ir not in (0, 1):
@@ -158,7 +163,7 @@ def update_assignment(assignment_id, start_date=None, end_date=None, rent_amount
             raise ValueError(f"Assignment {assignment_id} not found")
 
         unit_id = row["unit_id"]
-        new_start = start_date if start_date is not None else row["start_date"]
+        new_start = start_iso if start_iso is not None else row["start_date"]
         new_end = end_date if end_date is not None else row["end_date"]
 
         # Validate dates order
@@ -174,10 +179,10 @@ def update_assignment(assignment_id, start_date=None, end_date=None, rent_amount
         params = []
         if start_date is not None:
             fields.append("start_date = ?")
-            params.append(start_date)
+            params.append(start_iso)
         if end_date is not None:
             fields.append("end_date = ?")
-            params.append(end_date)
+            params.append(_parse_date(end_date).isoformat())
         if rent_amount is not None:
             fields.append("rent_amount = ?")
             params.append(rent_amount)

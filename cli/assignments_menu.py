@@ -35,17 +35,28 @@ def assignments_menu():
 
 def add_assignment():
     unit_id = input("Unit ID: ").strip()
+    owner_id = input("Owner ID: ").strip()
     client_id = input("Client ID: ").strip()
     start_date = input("Start date (dd/mm/yyyy): ").strip()
     end_date = input("End date (dd/mm/yyyy, optional): ").strip() or None
+    share_percent = input("Share percent (0-100): ").strip()
+    alternation_type = input("Alternation type (none/odd_even/cycle, default 'none'): ").strip() or 'none'
+    cycle_length = input("Cycle length (optional): ").strip() or None
+    cycle_position = input("Cycle position (optional): ").strip() or None
     rent_amount = input("Rent amount: ").strip()
     ras_ir = input("ras_ir (0 or 1, default 0): ").strip()
 
-    if not unit_id.isdigit() or not client_id.isdigit():
-        print("Unit ID and Client ID must be numeric.")
+    if not unit_id.isdigit() or not owner_id.isdigit() or not client_id.isdigit():
+        print("Unit ID, Owner ID, and Client ID must be numeric.")
         return
     unit_id = int(unit_id)
+    owner_id = int(owner_id)
     client_id = int(client_id)
+
+    if not share_percent.isdigit():
+        print("Share percent must be numeric.")
+        return
+    share_percent = float(share_percent)
 
     if not rent_amount:
         print("rent_amount is required.")
@@ -57,10 +68,24 @@ def add_assignment():
         print("rent_amount must be a number.")
         return
 
+    if cycle_length:
+        try:
+            cycle_length = int(cycle_length)
+        except ValueError:
+            print("cycle_length must be numeric.")
+            return
+
+    if cycle_position:
+        try:
+            cycle_position = int(cycle_position)
+        except ValueError:
+            print("cycle_position must be numeric.")
+            return
+
     ras_ir = int(ras_ir) if ras_ir in ("0", "1") else 0
 
     try:
-        create_assignment(unit_id, client_id, start_date, end_date, rent_amount_val, ras_ir)
+        create_assignment(unit_id, owner_id, client_id, share_percent, alternation_type, cycle_length, cycle_position, start_date, end_date, rent_amount_val, ras_ir)
         print("Assignment added successfully.")
     except ValueError as e:
         print(f"Error: {e}")

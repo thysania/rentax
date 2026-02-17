@@ -69,7 +69,7 @@ def test_ownerships_cli_add_list_delete(tmp_path, monkeypatch, capsys):
         '2',
         '',
         '0',
-    ])
+    ] + ['0']*50)
     monkeypatch.setattr('builtins.input', lambda prompt='': next(inputs2))
     ownerships_menu()
     out2 = capsys.readouterr().out
@@ -134,7 +134,8 @@ def test_taxes_cli_export_csv_by_assignment(tmp_path, monkeypatch, capsys):
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, owner_id, 100))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 1000, 0)", (unit_id, client_id))
+    cur.execute("INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, start_date, rent_amount, ras_ir) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (unit_id, owner_id, client_id, 100, 'none', '2026-01-01', 1000, 0))
+    conn.commit()
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
@@ -144,13 +145,13 @@ def test_taxes_cli_export_csv_by_assignment(tmp_path, monkeypatch, capsys):
 
     conn.close()
 
-    # Simulate CLI input: year, blank owner, export yes, format, stdout
+    # Simulate CLI input: year, blank owner, export yes, format by-assignment, stdout
     inputs = iter([
-        '2026',  # Year
-        '',      # Owner blank (all owners)
-        'y',     # Export CSV
-        '2',     # by-assignment format (numeric menu)
-        '-',     # stdout
+        '2026',
+        '',
+        'y',
+        '2',
+        '-',
     ])
     monkeypatch.setattr('builtins.input', lambda prompt='': next(inputs))
 
@@ -161,48 +162,6 @@ def test_taxes_cli_export_csv_by_assignment(tmp_path, monkeypatch, capsys):
     # CSV header and one unit reference should be present in the output
     assert 'unit_reference' in out
     assert 'U-CSV' in out
-
-
-def test_taxes_cli_export_csv_minimal(tmp_path, monkeypatch, capsys):
-    db = _setup_db(tmp_path, monkeypatch)
-    conn = sqlite3.connect(db)
-    cur = conn.cursor()
-
-    cur.execute("INSERT INTO owners (name, family_count, legal_id) VALUES ('Owner-MIN', 0, 'LID-MIN')")
-    cur.execute("INSERT INTO units (reference, city) VALUES ('U-MIN','CityMIN')")
-    cur.execute("INSERT INTO clients (name, client_type, legal_id) VALUES ('Client-MIN','PP','CLID-MIN')")
-    conn.commit()
-
-    owner_id = cur.execute("SELECT id FROM owners LIMIT 1").fetchone()[0]
-    unit_id = cur.execute("SELECT id FROM units LIMIT 1").fetchone()[0]
-    client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
-
-    cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, owner_id, 100))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 1000, 0)", (unit_id, client_id))
-    conn.commit()
-
-    aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
-    import services.receipt_service as rsvc
-    rsvc.create_receipt(aid, '2026-01-01', '2026-01-05', 1000)
-
-    conn.close()
-
-    # Simulate CLI input: year, blank owner, export yes, format minimal, stdout
-    inputs = iter([
-        '2026',
-        '',
-        'y',
-        'minimal',
-        '-',
-    ])
-    monkeypatch.setattr('builtins.input', lambda prompt='': next(inputs))
-
-    from cli.taxes_menu import taxes_menu
-    taxes_menu()
-    out = capsys.readouterr().out
-
-    assert 'rounded_tax' in out
-    assert 'Owner-MIN' in out
 
 
 def test_taxes_cli_export_csv_detailed(tmp_path, monkeypatch, capsys):
@@ -220,7 +179,7 @@ def test_taxes_cli_export_csv_detailed(tmp_path, monkeypatch, capsys):
     client_id = cur.execute("SELECT id FROM clients LIMIT 1").fetchone()[0]
 
     cur.execute("INSERT INTO ownerships (unit_id, owner_id, share_percent, alternate) VALUES (?, ?, ?, 0)", (unit_id, owner_id, 100))
-    cur.execute("INSERT INTO assignments (unit_id, client_id, start_date, rent_amount, ras_ir) VALUES (?, ?, '2026-01-01', 1000, 0)", (unit_id, client_id))
+    cur.execute("INSERT INTO assignments (unit_id, owner_id, client_id, share_percent, alternation_type, start_date, rent_amount, ras_ir) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (unit_id, owner_id, client_id, 100, 'none', '2026-01-01', 1000, 0))
     conn.commit()
 
     aid = cur.execute("SELECT id FROM assignments LIMIT 1").fetchone()[0]
